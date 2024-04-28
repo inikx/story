@@ -13,6 +13,12 @@ typedef _StoryItemBuilder = Widget Function(
 
 typedef _StoryConfigFunction = int Function(int pageIndex);
 
+typedef _StoryDurationFunction = Duration Function(
+  BuildContext context,
+  int pageIndex,
+  int storyIndex,
+);
+
 enum IndicatorAnimationCommand { pause, resume }
 
 /// PageView to implement story like UI
@@ -28,7 +34,7 @@ class StoryPageView extends StatefulWidget {
     this.initialStoryIndex,
     this.initialPage = 0,
     this.onPageLimitReached,
-    this.indicatorDuration = const Duration(seconds: 5),
+    this.indicatorDuration,
     this.indicatorPadding =
         const EdgeInsets.symmetric(vertical: 32, horizontal: 8),
     this.backgroundColor = Colors.black,
@@ -67,7 +73,7 @@ class StoryPageView extends StatefulWidget {
   final EdgeInsetsGeometry indicatorPadding;
 
   /// duration of [_Indicators]
-  final Duration indicatorDuration;
+  final _StoryDurationFunction? indicatorDuration;
 
   /// Called when the very last story is finished.
   ///
@@ -155,7 +161,13 @@ class _StoryPageViewState extends State<StoryPageView> {
                   isCurrentPage: currentPageValue == index,
                   isPaging: isPaging,
                   onPageLimitReached: widget.onPageLimitReached,
-                  itemBuilder: widget.itemBuilder,
+                  itemBuilder: index == currentPageValue
+                      ? widget.itemBuilder
+                      : (contex, p, p1) {
+                          return Container(
+                            color: widget.backgroundColor,
+                          );
+                        },
                   gestureItemBuilder: widget.gestureItemBuilder,
                   indicatorDuration: widget.indicatorDuration,
                   indicatorPadding: widget.indicatorPadding,
@@ -207,7 +219,7 @@ class _StoryPageBuilder extends StatefulWidget {
   final bool isPaging;
   final _StoryItemBuilder itemBuilder;
   final _StoryItemBuilder? gestureItemBuilder;
-  final Duration indicatorDuration;
+  final _StoryDurationFunction? indicatorDuration;
   final EdgeInsetsGeometry indicatorPadding;
   final ValueNotifier<IndicatorAnimationCommand>? indicatorAnimationController;
   final Color indicatorVisitedColor;
@@ -226,7 +238,7 @@ class _StoryPageBuilder extends StatefulWidget {
     required VoidCallback? onPageLimitReached,
     required _StoryItemBuilder itemBuilder,
     _StoryItemBuilder? gestureItemBuilder,
-    required Duration indicatorDuration,
+    required _StoryDurationFunction? indicatorDuration,
     required EdgeInsetsGeometry indicatorPadding,
     required ValueNotifier<IndicatorAnimationCommand>?
         indicatorAnimationController,
@@ -330,19 +342,35 @@ class _StoryPageBuilderState extends State<_StoryPageBuilder>
         }
       }
     };
-    animationController = AnimationController(
-      vsync: this,
-      duration: widget.indicatorDuration,
-    )..addStatusListener(
+    animationController = AnimationController(vsync: this)
+      ..addStatusListener(
         (status) {
           if (status == AnimationStatus.completed) {
             context.read<_StoryStackController>().increment(
-                restartAnimation: () => animationController.forward(from: 0));
+                restartAnimation: () => animationController
+                  ..duration = (widget.indicatorDuration?.call(
+                        context,
+                        widget.pageIndex,
+                        context.read<_StoryStackController>().value,
+                      ) ??
+                      const Duration(seconds: 5))
+                  ..forward(from: 0));
           }
         },
       );
     widget.indicatorAnimationController?.addListener(indicatorListener);
     storyImageLoadingController.addListener(imageLoadingListener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    animationController.duration = widget.indicatorDuration?.call(
+          context,
+          widget.pageIndex,
+          context.read<_StoryStackController>().value,
+        ) ??
+        const Duration(seconds: 5);
   }
 
   @override
@@ -446,11 +474,15 @@ class _Gestures extends StatelessWidget {
                 }
               },
               onLongPress: () {
+                storyImageLoadingController.value =
+                    StoryImageLoadingState.pause;
                 animationController!.stop();
               },
               onLongPressUp: () {
                 if (storyImageLoadingController.value !=
                     StoryImageLoadingState.loading) {
+                  storyImageLoadingController.value =
+                      StoryImageLoadingState.unpause;
                   animationController!.forward();
                 }
               },
@@ -478,11 +510,15 @@ class _Gestures extends StatelessWidget {
                 }
               },
               onLongPress: () {
+                storyImageLoadingController.value =
+                    StoryImageLoadingState.pause;
                 animationController!.stop();
               },
               onLongPressUp: () {
                 if (storyImageLoadingController.value !=
                     StoryImageLoadingState.loading) {
+                  storyImageLoadingController.value =
+                      StoryImageLoadingState.unpause;
                   animationController!.forward();
                 }
               },
@@ -555,23 +591,25 @@ class _IndicatorsState extends State<_Indicators> {
         storyImageLoadingController.value != StoryImageLoadingState.loading) {
       widget.animationController!.forward(from: 0);
     }
-    return Padding(
-      padding: widget.padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(
-          widget.storyLength,
-          (index) => _Indicator(
-            index: index,
-            indicatorHeight: widget.indicatorHeight,
-            value: (index == currentStoryIndex)
-                ? indicatorAnimation.value
-                : (index > currentStoryIndex)
-                    ? 0
-                    : 1,
-            indicatorVisitedColor: widget.indicatorVisitedColor,
-            indicatorUnvisitedColor: widget.indicatorUnvisitedColor,
+    return SafeArea(
+      child: Padding(
+        padding: widget.padding,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(
+            widget.storyLength,
+            (index) => _Indicator(
+              index: index,
+              indicatorHeight: widget.indicatorHeight,
+              value: (index == currentStoryIndex)
+                  ? indicatorAnimation.value
+                  : (index > currentStoryIndex)
+                      ? 0
+                      : 1,
+              indicatorVisitedColor: widget.indicatorVisitedColor,
+              indicatorUnvisitedColor: widget.indicatorUnvisitedColor,
+            ),
           ),
         ),
       ),

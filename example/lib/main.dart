@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:story/story_image.dart';
 import 'package:story/story_page_view.dart';
+import 'package:story/story_video.dart';
 
 void main() {
   runApp(const MyApp());
@@ -73,11 +75,11 @@ final sampleUsers = [
     StoryModel(
         "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?ixid=MXwxMjA3fDF8MHxlZGl0b3JpYWwtZmVlZHwxN3x8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"),
     StoryModel(
-        "https://images.unsplash.com/photo-1609418426663-8b5c127691f9?ixid=MXwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHwyNXx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"),
+        "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4"),
     StoryModel(
         "https://images.unsplash.com/photo-1609444074870-2860a9a613e3?ixid=MXwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw1Nnx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"),
     StoryModel(
-        "https://images.unsplash.com/photo-1609504373567-acda19c93dc4?ixid=MXwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw1MHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"),
+        "https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4"),
   ], "User1",
       "https://images.unsplash.com/photo-1609262772830-0decc49ec18c?ixid=MXwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHwzMDF8fHxlbnwwfHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"),
   UserModel([
@@ -104,18 +106,18 @@ class StoryPage extends StatefulWidget {
 }
 
 class _StoryPageState extends State<StoryPage> {
-  late ValueNotifier<IndicatorAnimationCommand> indicatorAnimationController;
+  // late ValueNotifier<IndicatorAnimationCommand> indicatorAnimationController;
 
   @override
   void initState() {
     super.initState();
-    indicatorAnimationController = ValueNotifier<IndicatorAnimationCommand>(
-        IndicatorAnimationCommand.resume);
+    // indicatorAnimationController = ValueNotifier<IndicatorAnimationCommand>(
+    //     IndicatorAnimationCommand.resume);
   }
 
   @override
   void dispose() {
-    indicatorAnimationController.dispose();
+    // indicatorAnimationController.dispose();
     super.dispose();
   }
 
@@ -123,56 +125,49 @@ class _StoryPageState extends State<StoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StoryPageView(
+        backgroundColor: Colors.black,
         itemBuilder: (context, pageIndex, storyIndex) {
           final user = sampleUsers[pageIndex];
           final story = user.stories[storyIndex];
+
           return Stack(
             children: [
               Positioned.fill(
-                child: Container(color: Colors.black),
-              ),
+                  child: Container(
+                color: Colors.black,
+              )),
               Positioned.fill(
-                child: StoryImage(
-                  key: ValueKey(story.imageUrl),
-                  imageProvider: NetworkImage(
-                    story.imageUrl,
-                  ),
-                  fit: BoxFit.fitWidth,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 44, left: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      height: 32,
-                      width: 32,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(user.imageUrl),
-                          fit: BoxFit.cover,
+                child: story.imageUrl.endsWith('mp4')
+                    ? StoryVideo(
+                        // key: ValueKey(story.imageUrl),
+                        key: UniqueKey(),
+                        url: story.imageUrl,
+                      )
+                    : StoryImage(
+                        key: UniqueKey(),
+                        // key: ValueKey(story.imageUrl),
+                        imageProvider: NetworkImage(
+                          story.imageUrl,
                         ),
-                        shape: BoxShape.circle,
+                        fit: BoxFit.cover,
                       ),
-                    ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    Text(
-                      user.userName,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           );
         },
+        indicatorDuration: (context, pageIndex, storyIndex) {
+          final user = sampleUsers[pageIndex];
+          final story = user.stories[storyIndex];
+          if (story.imageUrl.endsWith('mp4')) {
+            return const Duration(seconds: 10);
+          } else {
+            return const Duration(seconds: 3);
+          }
+        },
         gestureItemBuilder: (context, pageIndex, storyIndex) {
+          final user = sampleUsers[pageIndex];
+          final story = user.stories[storyIndex];
+
           return Stack(children: [
             Align(
               alignment: Alignment.topRight,
@@ -188,42 +183,37 @@ class _StoryPageState extends State<StoryPage> {
                 ),
               ),
             ),
-            if (pageIndex == 0)
-              Center(
-                child: ElevatedButton(
-                  child: const Text('show modal bottom sheet'),
-                  onPressed: () async {
-                    indicatorAnimationController.value =
-                        IndicatorAnimationCommand.pause;
-                    await showModalBottomSheet(
-                      context: context,
-                      builder: (context) => SizedBox(
-                        height: MediaQuery.of(context).size.height / 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            'Look! The indicator is now paused\n\n'
-                            'It will be coutinued after closing the modal bottom sheet.',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    );
-                    indicatorAnimationController.value =
-                        IndicatorAnimationCommand.resume;
-                  },
-                ),
-              ),
+            // if (pageIndex == 0)
+            // Center(
+            //   child: ElevatedButton(
+            //     child: const Text('show modal bottom sheet'),
+            //     onPressed: () async {
+            //       indicatorAnimationController.value =
+            //           IndicatorAnimationCommand.pause;
+            //       await showModalBottomSheet(
+            //         context: context,
+            //         builder: (context) => SizedBox(
+            //           height: MediaQuery.of(context).size.height / 2,
+            //           child: Padding(
+            //             padding: const EdgeInsets.all(24),
+            //             child: Text(
+            //               'Look! The indicator is now paused\n\n'
+            //               'It will be coutinued after closing the modal bottom sheet.',
+            //               style: Theme.of(context).textTheme.headlineSmall,
+            //               textAlign: TextAlign.center,
+            //             ),
+            //           ),
+            //         ),
+            //       );
+            //       indicatorAnimationController.value =
+            //           IndicatorAnimationCommand.resume;
+            //     },
+            //   ),
+            // ),
           ]);
         },
-        indicatorAnimationController: indicatorAnimationController,
-        initialStoryIndex: (pageIndex) {
-          if (pageIndex == 0) {
-            return 1;
-          }
-          return 0;
-        },
+        // indicatorAnimationController: indicatorAnimationController,
+
         pageLength: sampleUsers.length,
         storyLength: (int pageIndex) {
           return sampleUsers[pageIndex].stories.length;

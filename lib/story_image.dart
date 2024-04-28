@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// StoryImage
-enum StoryImageLoadingState {
-  loading,
-  available,
-}
+enum StoryImageLoadingState { loading, available, pause, unpause }
 
 class StoryImageLoadingController
     extends ValueNotifier<StoryImageLoadingState> {
-  StoryImageLoadingController._() : super(StoryImageLoadingState.available);
+  StoryImageLoadingController() : super(StoryImageLoadingState.loading);
 }
 
-final storyImageLoadingController = StoryImageLoadingController._();
+final storyImageLoadingController = StoryImageLoadingController();
 
 class StoryImage extends StatefulWidget {
   const StoryImage({
