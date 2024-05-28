@@ -38,7 +38,10 @@ class _StoryVideoState extends State<StoryVideo> {
     final position = await controller.position;
     if ((position ?? Duration.zero) > Duration.zero &&
         storyImageLoadingController.value != StoryImageLoadingState.pause) {
-      storyImageLoadingController.value = StoryImageLoadingState.available;
+      setState(() {
+        storyImageLoadingController.value = StoryImageLoadingState.available;
+      });
+
       return;
     }
   };
@@ -47,7 +50,6 @@ class _StoryVideoState extends State<StoryVideo> {
   void initState() {
     super.initState();
     storyImageLoadingController.value = StoryImageLoadingState.loading;
-
     controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
       ..initialize().then((_) {
         if (!mounted) {
@@ -83,7 +85,12 @@ class _StoryVideoState extends State<StoryVideo> {
         child: SizedBox(
             width: controller.value.size.width,
             height: controller.value.size.height,
-            child: VideoPlayer(controller)),
+            child: storyImageLoadingController.value ==
+                    StoryImageLoadingState.loading
+                ? Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  )
+                : VideoPlayer(controller)),
       ),
     );
   }

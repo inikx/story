@@ -67,7 +67,9 @@ class _StoryImageState extends State<StoryImage> {
     storyImageLoadingController.value = StoryImageLoadingState.loading;
     imageStreamListener = ImageStreamListener(
       (image, synchronousCall) {
-        storyImageLoadingController.value = StoryImageLoadingState.available;
+        setState(() {
+          storyImageLoadingController.value = StoryImageLoadingState.available;
+        });
       },
     );
     widget.imageProvider
@@ -82,26 +84,30 @@ class _StoryImageState extends State<StoryImage> {
 
   @override
   Widget build(BuildContext context) {
-    return Image(
-      image: widget.imageProvider,
-      frameBuilder: widget.frameBuilder,
-      loadingBuilder: widget.loadingBuilder,
-      errorBuilder: widget.errorBuilder,
-      semanticLabel: widget.semanticLabel,
-      excludeFromSemantics: widget.excludeFromSemantics,
-      width: widget.width,
-      height: widget.height,
-      color: widget.color,
-      opacity: widget.opacity,
-      colorBlendMode: widget.colorBlendMode,
-      fit: widget.fit,
-      alignment: widget.alignment,
-      repeat: widget.repeat,
-      centerSlice: widget.centerSlice,
-      matchTextDirection: widget.matchTextDirection,
-      gaplessPlayback: widget.gaplessPlayback,
-      isAntiAlias: widget.isAntiAlias,
-      filterQuality: widget.filterQuality,
-    );
+    return storyImageLoadingController.value == StoryImageLoadingState.loading
+        ? Center(
+            child: CircularProgressIndicator.adaptive(),
+          )
+        : Image(
+            image: widget.imageProvider,
+            frameBuilder: widget.frameBuilder,
+            loadingBuilder: widget.loadingBuilder,
+            errorBuilder: widget.errorBuilder,
+            semanticLabel: widget.semanticLabel,
+            excludeFromSemantics: widget.excludeFromSemantics,
+            width: widget.width,
+            height: widget.height,
+            color: widget.color,
+            opacity: widget.opacity,
+            colorBlendMode: widget.colorBlendMode,
+            fit: widget.fit,
+            alignment: widget.alignment,
+            repeat: widget.repeat,
+            centerSlice: widget.centerSlice,
+            matchTextDirection: widget.matchTextDirection,
+            gaplessPlayback: widget.gaplessPlayback,
+            isAntiAlias: widget.isAntiAlias,
+            filterQuality: widget.filterQuality,
+          );
   }
 }
